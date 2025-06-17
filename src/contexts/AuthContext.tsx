@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setToken(newToken)
     const decoded = jwtDecode<JwtPayload>(newToken)
     setUser(decoded)
-    navigate('/anime', { replace: true })
+    navigate('/', { replace: true })
   }, [navigate])
 
   const logout = useCallback(() => {
