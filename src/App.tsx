@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import HomePage from './pages/HomePage'
+import Expenses from './pages/expenses'
 import PrivateRoute from './components/PrivateRoute'
 
 export default function App() {
@@ -13,6 +14,16 @@ export default function App() {
         element={
           <PrivateRoute>
             <HomePage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Página de gastos protegida */}
+      <Route
+        path="/expenses"
+        element={
+          <PrivateRoute>
+            <Expenses />
           </PrivateRoute>
         }
       />
