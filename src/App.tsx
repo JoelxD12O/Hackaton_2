@@ -2,12 +2,20 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import HomePage from './pages/HomePage'
+import PrivateRoute from './components/PrivateRoute'
 
 export default function App() {
   return (
     <Routes>
       {/* Página de inicio protegida */}
-      <Route path="/" element={<HomePage />} />
+      <Route
+        path="/"
+        element={
+          <PrivateRoute>
+            <HomePage />
+          </PrivateRoute>
+        }
+      />
 
       {/* Autenticación */}
       <Route path="/login" element={<LoginPage />} />
