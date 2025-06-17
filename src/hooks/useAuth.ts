@@ -1,4 +1,3 @@
-// src/hooks/useAuth.ts
 import type { AxiosResponse } from 'axios'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
@@ -6,17 +5,16 @@ import { api } from '../api/cliente'
 
 export interface Credentials {
   email: string
-  password: string
+  passwd: string
 }
 
-export interface TokenRes {
-  access_token: string
-  token_type: string
-}
-
-export interface User {
-  id: number
-  email: string
+export interface AuthResponse {
+  status: number
+  message: string
+  result: {
+    token: string
+    username: string
+  }
 }
 
 /**
@@ -26,33 +24,43 @@ export function useRegister() {
   const { login } = useAuth()
   const queryClient = useQueryClient()
 
-  return useMutation<TokenRes, Error, Credentials>({
+  return useMutation<AuthResponse, unknown, Credentials>({
     mutationFn: async (credentials) => {
-      const response: AxiosResponse<TokenRes> = await api.post('/api/auth/register', credentials)
+      const response: AxiosResponse<AuthResponse> = await api.post(
+        '/authentication/register',
+        credentials
+      )
       return response.data
     },
-    onSuccess: (data) => {
-      login(data.access_token)
+    onSuccess: (res) => {
+      // Extract JWT from response
+      login(res.result.token)
       queryClient.invalidateQueries({ queryKey: ['me'] })
     },
   })
 }
+
+/**
+ * Hook to perform login and auto-login.
+ */
 export function useLogin() {
   const { login } = useAuth()
   const queryClient = useQueryClient()
 
-  return useMutation<TokenRes, Error, Credentials>({
+  return useMutation<AuthResponse, unknown, Credentials>({
     mutationFn: async (credentials) => {
-      const response: AxiosResponse<TokenRes> = await api.post('/api/auth/login', credentials)
+      const response: AxiosResponse<AuthResponse> = await api.post(
+        '/authentication/login',
+        credentials
+      )
       return response.data
     },
-    onSuccess: (data) => {
-      login(data.access_token)
+    onSuccess: (res) => {
+      login(res.result.token)
       queryClient.invalidateQueries({ queryKey: ['me'] })
     },
   })
 }
-
 
 /**
  * Hook to perform logout.

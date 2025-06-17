@@ -11,12 +11,32 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // 1. Validación mínima de longitud
+    if (password.length < 12) {
+      return alert('La contraseña debe tener al menos 12 caracteres.')
+    }
+
+    // 2. Construimos el payload
+    const payload = { email, passwd: password }
+    console.log('🚀 Register payload:', payload)
+
     try {
-      await registerMutation.mutateAsync({ email, password })
-      // registration auto-logs in, so redirect
+      // 3. Intentamos registrar
+      await registerMutation.mutateAsync(payload)
+      // Si todo OK, el hook ya guardó el token y podemos redirigir
       navigate('/anime', { replace: true })
     } catch (error: any) {
-      alert(error.response?.data?.detail || 'Error al registrar')
+      // 4. Debug: muestra el objeto completo que llega del servidor
+      console.error('Register error response:', error.response?.data)
+
+      // 5. Muestra el mensaje de error correcto
+      const errData = error.response?.data
+      const userMsg =
+        errData?.message /* backend usa "message" */ ||
+        errData?.detail  /* fallback si detalle existe */ ||
+        'Error al registrar'
+      alert(userMsg)
     }
   }
 
@@ -34,10 +54,11 @@ export default function RegisterPage() {
         />
         <input
           type="password"
-          placeholder="Contraseña"
+          placeholder="Contraseña (mín. 12 caracteres)"
           value={password}
           onChange={e => setPassword(e.target.value)}
           required
+          minLength={12}
           className="w-full p-2 border rounded"
         />
         <button
@@ -47,7 +68,7 @@ export default function RegisterPage() {
         >
           {registerMutation.isPending ? 'Registrando...' : 'Registrarse'}
         </button>
-      </form>
+      </form> 
       <p className="mt-4 text-center">
         ¿Ya tienes cuenta?{' '}
         <Link to="/login" className="text-blue-600 underline">
