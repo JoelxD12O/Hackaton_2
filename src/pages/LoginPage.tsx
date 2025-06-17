@@ -11,11 +11,19 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
     try {
-      await loginMutation.mutateAsync({ email, password })
+      await loginMutation.mutateAsync({ email, passwd: password })
+      // Si mutateAsync resuelve, el hook ya guardó el token y navegará
       navigate('/anime', { replace: true })
     } catch (error: any) {
-      alert(error.response?.data?.detail || 'Error al iniciar sesión')
+      console.error('Login error response:', error.response?.data)
+      const errData = error.response?.data
+      const userMsg =
+        errData?.message /* backend usa "message" */ ||
+        errData?.detail  /* fallback si usa "detail" */ ||
+        'Error al iniciar sesión'
+      alert(userMsg)
     }
   }
 
