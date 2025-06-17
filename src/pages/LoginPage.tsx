@@ -1,6 +1,6 @@
 // src/pages/LoginPage.tsx
 import React, { useState } from 'react'
-import { useLogin } from '../hooks/UseAuth'
+import { useLogin } from '../hooks/useAuth'
 import { useNavigate, Link } from 'react-router-dom'
 
 export default function LoginPage() {

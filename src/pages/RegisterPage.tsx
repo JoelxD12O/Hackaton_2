@@ -1,6 +1,6 @@
 // src/pages/RegisterPage.tsx
 import React, { useState } from 'react'
-import { useRegister } from '../hooks/UseAuth'
+import { useRegister } from '../hooks/useAuth'
 import { useNavigate, Link } from 'react-router-dom'
 
 export default function RegisterPage() {
