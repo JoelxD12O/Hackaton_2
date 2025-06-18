@@ -1,127 +1,218 @@
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
+import { api } from '../api/cliente'
+import axios, { AxiosError } from 'axios'
 
-interface Gasto {
-  id: number
-  description: string
-  amount: number
-  category: {
-    name: string
-  }
-  date: string
-}
-
-interface Categoria {
+interface Category {
   id: number
   name: string
 }
 
-const API = 'http://198.211.105.95:8080'
-const token = localStorage.getItem('token')
+interface ExpenseItem {
+  id: number
+  expenseCategory?: Category   // lo que viene al leer
+  category?: Category          // lo que enviamos al crear
+  year: number
+  month: number
+  amount: number
+}
 
 export default function Expenses() {
-  const [description, setDescription] = useState('')
-  const [amount, setAmount] = useState<number>(0)
-  const [categoryId, setCategoryId] = useState<number>(0)
-  const [categorias, setCategorias] = useState<Categoria[]>([])
-  const [gastos, setGastos] = useState<Gasto[]>([])
-  const [reload, setReload] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategory, setSelectedCategory] = useState(0)
+  // Fecha en formato YYYY-MM-DD
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [amount, setAmount] = useState(0)
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshFlag, setRefreshFlag] = useState(false)
 
-  // Obtener categorías
+  // Año y mes extraídos de `date`
+  const [year, month] = date.split('-').map(Number)
+
+  // 1) Solo al montar: carga categorías
   useEffect(() => {
-    axios.get(`${API}/expenses_category`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setCategorias(res.data))
+    api.get<Category[]>('/expenses_category')
+      .then(res => setCategories(res.data))
+      .catch((err: AxiosError) => {
+        console.error('Error cargando categorías:', err)
+        setError('No se pudieron cargar las categorías.')
+      })
   }, [])
 
-  // Obtener gastos del mes (ejemplo: junio 2024)
+  // 2) Cada vez que cambien selectedCategory, year, month o refreshFlag: carga detalle
   useEffect(() => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = today.getMonth() + 1
+    if (selectedCategory === 0) {
+      setExpenses([])
+      return
+    }
 
-    axios.get(`${API}/expenses/detail?year=${year}&month=${month}&categoryId=0`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setGastos(res.data))
-  }, [reload])
+    setLoading(true)
+    setError(null)
 
+    api.get<ExpenseItem[]>('/expenses/detail', {
+        params: { year, month, categoryId: selectedCategory }
+      })
+      .then(res => setExpenses(res.data))
+      .catch((err: AxiosError) => {
+        console.error('Error cargando gastos:', err)
+        setError('No se pudieron cargar los gastos.')
+      })
+      .finally(() => setLoading(false))
+  }, [selectedCategory, year, month, refreshFlag])
+
+  // 3) Registrar nuevo gasto
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await axios.post(`${API}/expenses`, {
-      description,
-      amount,
-      categoryId,
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    setDescription('')
-    setAmount(0)
-    setCategoryId(0)
-    setReload(!reload)
+    if (selectedCategory === 0) {
+      alert('Selecciona una categoría antes de agregar un gasto.')
+      return
+    }
+
+    try {
+      const payload = {
+        category: { id: selectedCategory },
+        amount,
+        year,
+        month
+      }
+      console.log('POST /expenses payload:', payload)
+      await api.post('/expenses', payload)
+      // limpia el formulario y fuerza recarga
+      setAmount(0)
+      setRefreshFlag(prev => !prev)
+    } catch (err: any) {
+      const resp = err.response?.data
+      console.group('Errores de validación en POST /expenses')
+      if (resp?.errors?.length) {
+        resp.errors.forEach((e: any) =>
+          console.error(`Campo "${e.field}": ${e.defaultMessage}`)
+        )
+        const first = resp.errors[0]
+        alert(`Error en ${first.field}: ${first.defaultMessage}`)
+      } else {
+        console.error('Error registrando gasto:', resp || err)
+        alert(resp?.message || 'Error al registrar el gasto')
+      }
+      console.groupEnd()
+    }
   }
 
-  const eliminarGasto = async (id: number) => {
-    await axios.delete(`${API}/expenses/${id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    setReload(!reload)
+  // 4) Eliminar gasto
+  const handleDelete = async (id: number) => {
+    try {
+      await api.delete(`/expenses/${id}`)
+      setExpenses(es => es.filter(e => e.id !== id))
+    } catch (err) {
+      console.error('Error eliminando gasto:', err)
+      alert('No se pudo eliminar el gasto')
+    }
   }
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-md border border-blue-300">
-      <h2 className="text-2xl font-bold text-center mb-6 text-blue-700">Gastos del mes</h2>
+    <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-md">
+      <h2 className="text-2xl font-bold text-center mb-6">Gestión de Gastos</h2>
 
+      {/* Formulario de creación */}
       <form onSubmit={handleSubmit} className="space-y-4 mb-8">
-        <input
-          type="text"
-          placeholder="Descripción"
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          required
-          className="w-full p-2 border rounded"
-        />
-        <input
-          type="number"
-          placeholder="Monto"
-          value={amount}
-          onChange={e => setAmount(parseFloat(e.target.value))}
-          required
-          className="w-full p-2 border rounded"
-        />
-        <select
-          value={categoryId}
-          onChange={e => setCategoryId(Number(e.target.value))}
-          required
-          className="w-full p-2 border rounded"
+        <div>
+          <label className="block mb-1">Fecha</label>
+          <input
+            type="date"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+            className="w-full p-2 border rounded"
+            required
+          />
+        </div>
+        <div>
+          <label className="block mb-1">Categoría</label>
+          <select
+            value={selectedCategory}
+            onChange={e => setSelectedCategory(+e.target.value)}
+            className="w-full p-2 border rounded"
+            required
+          >
+            <option value={0}>– Selecciona categoría –</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block mb-1">Monto (S/.)</label>
+          <input
+            type="number"
+            value={Number.isNaN(amount) ? 0 : amount}
+            onChange={e => {
+              const v = e.currentTarget.valueAsNumber
+              setAmount(Number.isNaN(v) ? 0 : v)
+            }}
+            className="w-full p-2 border rounded"
+            step="0.01"
+            min="0"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
-          <option value={0}>Selecciona una categoría</option>
-          {categorias.map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.name}</option>
-          ))}
-        </select>
-        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-          ➕ Registrar Gasto
+          ➕ Agregar Gasto
         </button>
       </form>
 
-      <ul className="divide-y divide-gray-200">
-        {gastos.map(gasto => (
-          <li key={gasto.id} className="py-2 flex justify-between items-center">
-            <div>
-              <p className="font-medium">{gasto.description}</p>
-              <p className="text-sm text-gray-500">
-                {gasto.category?.name || 'Sin categoría'} – {gasto.amount} soles
-              </p>
-            </div>
-            <button
-              onClick={() => eliminarGasto(gasto.id)}
-              className="text-red-500 hover:text-red-700 text-sm"
-            >
-              🗑️
-            </button>
-          </li>
-        ))}
-      </ul>
+      {/* Estados de carga / error */}
+      {loading && <p>Cargando gastos…</p>}
+      {error && <p className="text-red-600">{error}</p>}
+
+      {/* Listado */}
+      {!loading && !error && selectedCategory === 0 && (
+        <p className="text-center text-gray-500">
+          Selecciona una categoría para ver sus gastos.
+        </p>
+      )}
+      {!loading && !error && selectedCategory !== 0 && (
+        <ul className="divide-y divide-gray-200">
+          {expenses.length === 0 ? (
+            <li className="py-2 text-center text-gray-500">
+              No hay gastos para la categoría seleccionada.
+            </li>
+          ) : (
+            expenses.map(g => {
+              const catName =
+                g.category?.name ??
+                g.expenseCategory?.name ??
+                'Sin categoría'
+              return (
+                <li
+                  key={g.id}
+                  className="py-2 flex justify-between items-center"
+                >
+                  <div>
+                    <p className="font-medium">{catName}</p>
+                    <p className="text-sm text-gray-500">
+                      {g.year}-{String(g.month).padStart(2, '0')}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <span>S/. {g.amount.toFixed(2)}</span>
+                    <button
+                      onClick={() => handleDelete(g.id)}
+                      className="text-red-500 hover:text-red-700"
+                      aria-label="Eliminar gasto"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </li>
+              )
+            })
+          )}
+        </ul>
+      )}
     </div>
   )
 }
