@@ -1,30 +1,32 @@
 // src/pages/LoginPage.tsx
 import React, { useState } from 'react'
+import axios from 'axios'
 import { useLogin } from '../hooks/useAuth'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const loginMutation = useLogin()
-  const navigate = useNavigate()
+  const [email, setEmail] = useState<string>('')
+  const [passwd, setPasswd] = useState<string>('')
+  // Desestructuramos isPending en vez de isLoading, y también isError y error
+  const { mutate, isPending, isError, error } = useLogin()
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-
-    try {
-      await loginMutation.mutateAsync({ email, passwd: password })
-      // Si mutateAsync resuelve, el hook ya guardó el token y navegará
-      navigate('/anime', { replace: true })
-    } catch (error: any) {
-      console.error('Login error response:', error.response?.data)
-      const errData = error.response?.data
-      const userMsg =
-        errData?.message /* backend usa "message" */ ||
-        errData?.detail  /* fallback si usa "detail" */ ||
-        'Error al iniciar sesión'
-      alert(userMsg)
-    }
+    mutate(
+      { email, passwd },
+      {
+        onError: (err) => {
+          if (axios.isAxiosError(err)) {
+            const serverMsg = (err.response?.data as any)?.message || err.message
+            alert(serverMsg)
+          } else if (err instanceof Error) {
+            alert(err.message)
+          } else {
+            alert('Error al iniciar sesión')
+          }
+        }
+      }
+    )
   }
 
   return (
@@ -42,19 +44,27 @@ export default function LoginPage() {
         <input
           type="password"
           placeholder="Contraseña"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
+          value={passwd}
+          onChange={e => setPasswd(e.target.value)}
           required
           className="w-full p-2 border rounded"
         />
+
+        {isError && (
+          <p className="text-red-600">
+            {(error as Error)?.message ?? 'Error al iniciar sesión'}
+          </p>
+        )}
+
         <button
           type="submit"
-          disabled={loginMutation.isPending}
+          disabled={isPending}
           className="w-full py-2 bg-green-600 text-white rounded disabled:opacity-50"
         >
-          {loginMutation.isPending ? 'Entrando...' : 'Entrar'}
+          {isPending ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
+
       <p className="mt-4 text-center">
         ¿No tienes cuenta?{' '}
         <Link to="/register" className="text-green-600 underline">

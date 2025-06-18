@@ -1,19 +1,32 @@
+
 import { useAuth } from "../contexts/AuthContext";
 import { useSummary } from "../hooks/useSummary";
 import SummaryView from "../components/Summary/SummaryView";
 import { useNavigate } from "react-router-dom";
+import React from 'react'
 
-export default function Homepage() {
+export default function HomePage() {
+  const { user } = useAuth()
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = today.getMonth() + 1
   const navigate = useNavigate();
-  const { token } = useAuth();
-  const { summary, loading } = useSummary(token!);
+  const { summary, loading } = useSummary(user!);
 
-  if (loading) return <p>Cargando resumen de gastos...</p>;
-  if (!summary || summary.length === 0) return <p>No hay datos disponibles.</p>;
+
+  const {
+    data: summary = [],
+    isLoading,
+    isError,
+    error
+  } = useSummary(year, month)
+
+  if (isLoading) return <p>Cargando resumen de gastos...</p>
+  if (isError)   return <p>Error: {error.message}</p>
 
   return (
     <div>
-      <h1>Bienvenido a Ahorrista</h1>
+      <h1>Bienvenido{user?.email ? `, ${user.email}` : ''}</h1>
       <SummaryView data={summary} />
       <div className="mt-6">
         <button
@@ -24,5 +37,5 @@ export default function Homepage() {
         </button>
       </div>
     </div>
-  );
+  )
 }
