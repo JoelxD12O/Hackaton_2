@@ -3,7 +3,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { useSummary } from "../hooks/useSummary";
 import SummaryView from "../components/Summary/SummaryView";
 import { useNavigate } from "react-router-dom";
-import React from 'react'
 
 export default function HomePage() {
   const { user } = useAuth()
@@ -11,8 +10,6 @@ export default function HomePage() {
   const year = today.getFullYear()
   const month = today.getMonth() + 1
   const navigate = useNavigate();
-  const { summary, loading } = useSummary(user!);
-
 
   const {
     data: summary = [],
