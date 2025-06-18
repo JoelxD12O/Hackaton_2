@@ -3,6 +3,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import HomePage from './pages/HomePage'
 import PrivateRoute from './components/PrivateRoute'
+import DetailPage from './pages/DetailPage'
 
 export default function App() {
   return (
@@ -23,6 +24,12 @@ export default function App() {
 
       {/* Redireccionar rutas desconocidas a Home */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="/" element={<HomePage />} />
+
+
+        <Route path="/" element={<HomePage />} />
+        {/* Ahora la ruta DETAIL no lleva parámetro */}
+        <Route path="/detail" element={<DetailPage />} />
+      </Routes>   
   )
 }
