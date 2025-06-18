@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api/cliente'
 import axios, { AxiosError } from 'axios'
+import { useLocation } from 'react-router-dom'
 
 interface Category {
   id: number
@@ -16,10 +17,14 @@ interface ExpenseItem {
   amount: number
 }
 
+
 export default function Expenses() {
+  const location = useLocation()
+  const initialCategoryId = location.state?.categoryId || 0
+  const initialCategoryName = location.state?.categoryName || ''
+
   const [categories, setCategories] = useState<Category[]>([])
-  const [selectedCategory, setSelectedCategory] = useState(0)
-  // Fecha en formato YYYY-MM-DD
+  const [selectedCategory, setSelectedCategory] = useState(initialCategoryId)
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [amount, setAmount] = useState(0)
   const [expenses, setExpenses] = useState<ExpenseItem[]>([])
@@ -27,10 +32,8 @@ export default function Expenses() {
   const [error, setError] = useState<string | null>(null)
   const [refreshFlag, setRefreshFlag] = useState(false)
 
-  // Año y mes extraídos de `date`
   const [year, month] = date.split('-').map(Number)
 
-  // 1) Solo al montar: carga categorías
   useEffect(() => {
     api.get<Category[]>('/expenses_category')
       .then(res => setCategories(res.data))
@@ -40,7 +43,6 @@ export default function Expenses() {
       })
   }, [])
 
-  // 2) Cada vez que cambien selectedCategory, year, month o refreshFlag: carga detalle
   useEffect(() => {
     if (selectedCategory === 0) {
       setExpenses([])
@@ -51,8 +53,8 @@ export default function Expenses() {
     setError(null)
 
     api.get<ExpenseItem[]>('/expenses/detail', {
-        params: { year, month, categoryId: selectedCategory }
-      })
+      params: { year, month, categoryId: selectedCategory }
+    })
       .then(res => setExpenses(res.data))
       .catch((err: AxiosError) => {
         console.error('Error cargando gastos:', err)
@@ -61,7 +63,6 @@ export default function Expenses() {
       .finally(() => setLoading(false))
   }, [selectedCategory, year, month, refreshFlag])
 
-  // 3) Registrar nuevo gasto
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (selectedCategory === 0) {
@@ -76,9 +77,7 @@ export default function Expenses() {
         year,
         month
       }
-      console.log('POST /expenses payload:', payload)
       await api.post('/expenses', payload)
-      // limpia el formulario y fuerza recarga
       setAmount(0)
       setRefreshFlag(prev => !prev)
     } catch (err: any) {
@@ -98,7 +97,6 @@ export default function Expenses() {
     }
   }
 
-  // 4) Eliminar gasto
   const handleDelete = async (id: number) => {
     try {
       await api.delete(`/expenses/${id}`)
@@ -111,9 +109,14 @@ export default function Expenses() {
 
   return (
     <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-md">
-      <h2 className="text-2xl font-bold text-center mb-6">Gestión de Gastos</h2>
+      <h2 className="text-2xl font-bold text-center mb-2">Gestión de Gastos</h2>
+      {selectedCategory !== 0 && (
+        <p className="text-center text-sm text-gray-500 mb-4">
+          Mostrando gastos de <span className="font-semibold">{initialCategoryName}</span>
+        </p>
+      )}
 
-      {/* Formulario de creación */}
+      {/* Formulario */}
       <form onSubmit={handleSubmit} className="space-y-4 mb-8">
         <div>
           <label className="block mb-1">Fecha</label>
@@ -164,11 +167,9 @@ export default function Expenses() {
         </button>
       </form>
 
-      {/* Estados de carga / error */}
+      {/* Lista de gastos */}
       {loading && <p>Cargando gastos…</p>}
       {error && <p className="text-red-600">{error}</p>}
-
-      {/* Listado */}
       {!loading && !error && selectedCategory === 0 && (
         <p className="text-center text-gray-500">
           Selecciona una categoría para ver sus gastos.
@@ -183,19 +184,16 @@ export default function Expenses() {
           ) : (
             expenses.map(g => {
               const catName =
-                g.category?.name ??
-                g.expenseCategory?.name ??
-                'Sin categoría'
+                g.category?.name ?? g.expenseCategory?.name ?? 'Sin categoría'
               return (
-                <li
-                  key={g.id}
-                  className="py-2 flex justify-between items-center"
-                >
+                <li key={g.id} className="py-2 flex justify-between items-center">
                   <div>
                     <p className="font-medium">{catName}</p>
-                    <p className="text-sm text-gray-500">
-                      {g.year}-{String(g.month).padStart(2, '0')}
-                    </p>
+                    {g.year != null && g.month != null && (
+                      <p className="text-sm text-gray-500">
+                        {g.year}-{String(g.month).padStart(2, '0')}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center space-x-4">
                     <span>S/. {g.amount.toFixed(2)}</span>
