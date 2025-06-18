@@ -1,15 +1,21 @@
 // src/api/cliente.ts
 import axios from 'axios'
 
+// Lee la URL del .env (Vite expone las VITE_* en import.meta.env)
+const BASE_URL = import.meta.env.VITE_BACKEND_URL as string
+
 export const api = axios.create({
-  baseURL: 'http://198.211.105.95:8080',
+  baseURL: BASE_URL,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 })
 
-// Si hay token en localStorage al arrancar, lo ponemos en los headers por defecto
-const token = localStorage.getItem('token')
-if (token) {
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-}
+// Interceptor para inyectar el token en cada petición
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('token')
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})

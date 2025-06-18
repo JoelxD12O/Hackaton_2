@@ -1,9 +1,15 @@
-import React from 'react'
-import { Navigate } from 'react-router-dom'
+// src/components/PrivateRoute.tsx
+import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
-export default function PrivateRoute({ children }: { children: React.ReactNode }) {
+export default function PrivateRoute() {
   const { token } = useAuth()
 
-  return token ? children : <Navigate to="/login" replace />
+  // Si no hay token, redirige al login
+  if (!token) {
+    return <Navigate to="/login" replace />
+  }
+
+  // Si sí hay, renderiza la <Outlet/> que serán las rutas hijas
+  return <Outlet />
 }
