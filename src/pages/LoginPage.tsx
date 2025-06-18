@@ -1,76 +1,53 @@
 // src/pages/LoginPage.tsx
-import React, { useState } from 'react'
-import axios from 'axios'
 import { useLogin } from '../hooks/useAuth'
 import { Link } from 'react-router-dom'
+import LoginForm from '../components/LoginForm/LoginForm'
 
-export default function LoginPage() {
-  const [email, setEmail] = useState<string>('')
-  const [passwd, setPasswd] = useState<string>('')
-  // Desestructuramos isPending en vez de isLoading, y también isError y error
+// solo utilizamos el hook de login para la lógica global
+function LoginPage() {
   const { mutate, isPending, isError, error } = useLogin()
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    mutate(
-      { email, passwd },
-      {
-        onError: (err) => {
-          if (axios.isAxiosError(err)) {
-            const serverMsg = (err.response?.data as any)?.message || err.message
-            alert(serverMsg)
-          } else if (err instanceof Error) {
-            alert(err.message)
-          } else {
-            alert('Error al iniciar sesión')
-          }
-        }
-      }
-    )
-  }
-
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-white shadow rounded">
-      <h1 className="text-2xl mb-4">Iniciar Sesión</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-          className="w-full p-2 border rounded"
-        />
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={passwd}
-          onChange={e => setPasswd(e.target.value)}
-          required
-          className="w-full p-2 border rounded"
-        />
-
-        {isError && (
-          <p className="text-red-600">
-            {(error as Error)?.message ?? 'Error al iniciar sesión'}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={isPending}
-          className="w-full py-2 bg-green-600 text-white rounded disabled:opacity-50"
+    <div className="min-h-screen flex">
+      {/* Panel izquierdo */}
+      <div className="w-1/2 bg-gradient-to-br from-green-50 to-white flex flex-col items-center justify-center p-10">
+        <img src="/logo.svg" alt="MyWallet" className="h-24 mb-6" />
+        <h1 className="text-4xl font-bold text-green-700 mb-2">¡Bienvenido!</h1>
+        <p className="text-green-600">Regístrate para usar MyWallet</p>
+        <Link
+          to="/register"
+          className="mt-6 inline-block px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:shadow-md transition"
         >
-          {isPending ? 'Entrando...' : 'Entrar'}
-        </button>
-      </form>
-
-      <p className="mt-4 text-center">
-        ¿No tienes cuenta?{' '}
-        <Link to="/register" className="text-green-600 underline">
-          Regístrate
+          Registrarse
         </Link>
-      </p>
+      </div>
+
+      {/* Panel derecho */}
+      <div className="w-1/2 flex items-center justify-center p-10 bg-white">
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-lg p-8">
+          <h2 className="text-2xl font-semibold text-green-800 mb-6">
+            Iniciar Sesión
+          </h2>
+          <LoginForm
+            onSubmit={(credentials) =>
+              mutate(credentials, {
+                onError: (err) => {
+                  // manejo de errores ya descrito antes
+                  alert(
+                    'Error al iniciar sesión: ' +
+                      (err instanceof Error ? err.message : 'desconocido')
+                  )
+                },
+              })
+            }
+            isPending={isPending}
+            isError={isError}
+            error={error as Error | null}
+          />
+        </div>
+      </div>
     </div>
   )
 }
+
+export default LoginPage
