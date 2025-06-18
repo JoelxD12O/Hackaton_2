@@ -12,69 +12,120 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // 1. Validación mínima de longitud
     if (password.length < 12) {
       return alert('La contraseña debe tener al menos 12 caracteres.')
     }
 
-    // 2. Construimos el payload
-    const payload = { email, passwd: password }
-    console.log('🚀 Register payload:', payload)
-
     try {
-      // 3. Intentamos registrar
-      await registerMutation.mutateAsync(payload)
-      // Si todo OK, el hook ya guardó el token y podemos redirigir
-      navigate('/anime', { replace: true })
+      await registerMutation.mutateAsync({ email, passwd: password })
+      navigate('/login', { replace: true })
     } catch (error: any) {
-      // 4. Debug: muestra el objeto completo que llega del servidor
-      console.error('Register error response:', error.response?.data)
-
-      // 5. Muestra el mensaje de error correcto
-      const errData = error.response?.data
-      const userMsg =
-        errData?.message /* backend usa "message" */ ||
-        errData?.detail  /* fallback si detalle existe */ ||
+      console.error('Register error:', error.response?.data)
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
         'Error al registrar'
-      alert(userMsg)
+      alert(msg)
     }
   }
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-white shadow rounded">
-      <h1 className="text-2xl mb-4">Registro</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-          className="w-full p-2 border rounded"
-        />
-        <input
-          type="password"
-          placeholder="Contraseña (mín. 12 caracteres)"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-          minLength={12}
-          className="w-full p-2 border rounded"
-        />
-        <button
-          type="submit"
-          disabled={registerMutation.isPending}
-          className="w-full py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-        >
-          {registerMutation.isPending ? 'Registrando...' : 'Registrarse'}
-        </button>
-      </form> 
-      <p className="mt-4 text-center">
-        ¿Ya tienes cuenta?{' '}
-        <Link to="/login" className="text-blue-600 underline">
-          Iniciar sesión
-        </Link>
-      </p>
+    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
+      <div className="relative py-3 sm:max-w-xl sm:mx-auto">
+        {/* Capa de fondo inclinada en verde */}
+        <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 shadow-lg
+                         transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl" />
+        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
+          <div className="max-w-md mx-auto">
+            <h1 className="text-2xl font-semibold text-green-800">Registro</h1>
+            <div className="divide-y divide-gray-200">
+              <form
+                onSubmit={handleSubmit}
+                className="py-8 text-base leading-6 space-y-4 text-gray-700
+                           sm:text-lg sm:leading-7"
+              >
+                <div className="relative">
+                  <input
+                    autoComplete="off"
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    placeholder="Email"
+                    className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300
+                               text-gray-900 focus:outline-none focus:border-green-500 transition"
+                  />
+                  <label
+                    htmlFor="email"
+                    className="absolute left-0 -top-3.5 text-gray-600 text-sm
+                               peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400
+                               peer-placeholder-shown:top-2 transition-all
+                               peer-focus:-top-3.5 peer-focus:text-gray-600 peer-focus:text-sm"
+                  >
+                    Email
+                  </label>
+                </div>
+
+                <div className="relative">
+                  <input
+                    autoComplete="off"
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    placeholder="Contraseña"
+                    className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300
+                               text-gray-900 focus:outline-none focus:border-green-500 transition"
+                  />
+                  <label
+                    htmlFor="password"
+                    className="absolute left-0 -top-3.5 text-gray-600 text-sm
+                               peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400
+                               peer-placeholder-shown:top-2 transition-all
+                               peer-focus:-top-3.5 peer-focus:text-gray-600 peer-focus:text-sm"
+                  >
+                    Contraseña
+                  </label>
+                </div>
+
+                {registerMutation.isError && (
+                  <p className="text-red-600 text-sm">
+                    {(registerMutation.error as Error)?.message ||
+                      'Error al registrar'}
+                  </p>
+                )}
+
+                <div className="relative">
+                  <button
+                    type="submit"
+                    disabled={registerMutation.isPending}
+                    className="bg-green-500 text-white rounded-md px-6 py-2 w-full
+                               font-medium hover:bg-green-600 transition disabled:opacity-50"
+                  >
+                    {registerMutation.isPending
+                      ? 'Registrando...'
+                      : 'Registrarse'}
+                  </button>
+                </div>
+              </form>
+
+              <p className="mt-4 text-center text-sm text-gray-600">
+                ¿Ya tienes cuenta?{' '}
+                <Link
+                  to="/login"
+                  className="text-green-600 font-medium underline hover:text-green-800"
+                >
+                  Iniciar sesión
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
