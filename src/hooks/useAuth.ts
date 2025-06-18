@@ -1,3 +1,4 @@
+// src/hooks/useAuth.ts
 import type { AxiosResponse } from 'axios'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
@@ -11,61 +12,56 @@ export interface Credentials {
 export interface AuthResponse {
   status: number
   message: string
-  result: {
-    token: string
-    username: string
-  }
+  data?:    { token: string; email: string }
+  result?:  { token: string; username?: string }
 }
 
-/**
- * Hook to register a new user and auto-login.
- */
+// 1) Hook para registro
 export function useRegister() {
   const { login } = useAuth()
-  const queryClient = useQueryClient()
+  const qc = useQueryClient()
 
-  return useMutation<AuthResponse, unknown, Credentials>({
-    mutationFn: async (credentials) => {
-      const response: AxiosResponse<AuthResponse> = await api.post(
-        '/authentication/register',
-        credentials
-      )
-      return response.data
-    },
+  return useMutation<AxiosResponse<AuthResponse>, Error, Credentials>({
+    mutationFn: creds => api.post<AuthResponse>('/authentication/register', creds),
     onSuccess: (res) => {
-      // Extract JWT from response
-      login(res.result.token)
-      queryClient.invalidateQueries({ queryKey: ['me'] })
-    },
+      const payload = res.data.data ?? res.data.result
+      if (!payload?.token) {
+        throw new Error('No se encontró token tras el registro')
+      }
+      login(payload.token)
+      api.defaults.headers.common['Authorization'] = `Bearer ${payload.token}`
+      qc.invalidateQueries({ queryKey: ['me'] })
+    }
   })
 }
 
-/**
- * Hook to perform login and auto-login.
- */
+// 2) Hook para login
 export function useLogin() {
   const { login } = useAuth()
-  const queryClient = useQueryClient()
+  const qc = useQueryClient()
 
-  return useMutation<AuthResponse, unknown, Credentials>({
-    mutationFn: async (credentials) => {
-      const response: AxiosResponse<AuthResponse> = await api.post(
-        '/authentication/login',
-        credentials
-      )
-      return response.data
-    },
+  return useMutation<AxiosResponse<AuthResponse>, Error, Credentials>({
+    mutationFn: creds => api.post<AuthResponse>('/authentication/login', creds),
     onSuccess: (res) => {
-      login(res.result.token)
-      queryClient.invalidateQueries({ queryKey: ['me'] })
-    },
+      const payload = res.data.data ?? res.data.result
+      if (!payload?.token) {
+        throw new Error('No se encontró token tras el login')
+      }
+      login(payload.token)
+      api.defaults.headers.common['Authorization'] = `Bearer ${payload.token}`
+      qc.invalidateQueries({ queryKey: ['me'] })
+    }
   })
 }
 
-/**
- * Hook to perform logout.
- */
+// 3) Hook para logout
 export function useLogout() {
   const { logout } = useAuth()
-  return () => logout()
+  const qc = useQueryClient()
+
+  return () => {
+    logout()
+    delete api.defaults.headers.common['Authorization']
+    qc.invalidateQueries({ queryKey: ['me'] })
+  }
 }

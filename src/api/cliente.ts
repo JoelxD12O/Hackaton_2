@@ -1,21 +1,15 @@
+// src/api/cliente.ts
 import axios from 'axios'
 
-/**
- * Instancia de Axios apuntando a tu backend.
- * VITE_BACKEND_URL viene de tu .env (ej: http://localhost:8000)
- */
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: 'http://198.211.105.95:8080',
+  headers: {
+    'Content-Type': 'application/json'
+  }
 })
 
-/**
- * Interceptor que añade el token JWT (si existe) a cada petición.
- */
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token')
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+// Si hay token en localStorage al arrancar, lo ponemos en los headers por defecto
+const token = localStorage.getItem('token')
+if (token) {
+  api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+}
