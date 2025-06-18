@@ -1,46 +1,27 @@
+// src/App.tsx
 import { Routes, Route, Navigate } from 'react-router-dom'
-import LoginPage from './pages/LoginPage'
+import LoginPage   from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
-import HomePage from './pages/HomePage'
-import Expenses from './pages/expenses'
+import SummaryPage from './pages/SummaryPage'
+import DetailPage  from './pages/DetailPage'
 import PrivateRoute from './components/PrivateRoute'
-import DetailPage from './pages/DetailPage'
 
-export default function App() {
+export function App() {
   return (
     <Routes>
-      {/* Página de inicio protegida */}
-      <Route
-        path="/"
-        element={
-          <PrivateRoute>
-            <HomePage />
-          </PrivateRoute>
-        }
-      />
-
-      {/* Página de gastos protegida */}
-      <Route
-        path="/expenses"
-        element={
-          <PrivateRoute>
-            <Expenses />
-          </PrivateRoute>
-        }
-      />
-
-      {/* Autenticación */}
+      {/* 1. Ruta pública */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* Redireccionar rutas desconocidas a Home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-        <Route path="/" element={<HomePage />} />
 
-
-        <Route path="/" element={<HomePage />} />
-        {/* Ahora la ruta DETAIL no lleva parámetro */}
+      {/* 2. Rutas protegidas: todo lo que vaya dentro de este Route usará PrivateRoute */}
+      <Route element={<PrivateRoute />}>
+        <Route path="/" element={<SummaryPage />} />
         <Route path="/detail" element={<DetailPage />} />
-      </Routes>   
+      </Route>
+
+      {/* 3. Cualquier otra ruta */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
