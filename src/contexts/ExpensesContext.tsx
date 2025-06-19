@@ -15,6 +15,7 @@ interface ExpensesContextType {
   entries: RawSummaryEntry[]
   isLoading: boolean
   isError: boolean
+  refetch: () => void
 }
 
 const ExpensesContext = createContext<ExpensesContextType|undefined>(undefined)
@@ -24,6 +25,26 @@ export function ExpensesProvider({ children }: { children: ReactNode }) {
   const [entries,  setEntries]  = useState<RawSummaryEntry[]>([])
   const [isLoading, setLoading] = useState(true)
   const [isError,   setError]   = useState(false)
+  const refetch = () => {
+    setLoading(true)
+    setError(false)
+
+    api
+      .get<RawSummaryEntry[]>('/expenses_summary', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(r => {
+        setEntries(r.data)
+      })
+      .catch(() => {
+        setError(true)
+      })
+      
+      .finally(() => {
+        setLoading(false)
+      })
+      
+  }
 
   useEffect(() => {
     if (!token) {
@@ -52,7 +73,7 @@ export function ExpensesProvider({ children }: { children: ReactNode }) {
   }, [token])
 
   return (
-    <ExpensesContext.Provider value={{ entries, isLoading, isError }}>
+    <ExpensesContext.Provider value={{ entries, isLoading, isError, refetch }}>
       {children}
     </ExpensesContext.Provider>
   )

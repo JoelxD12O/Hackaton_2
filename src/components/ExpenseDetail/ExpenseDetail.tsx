@@ -1,5 +1,7 @@
 // src/components/ExpenseDetail/ExpenseDetail.tsx
+import { useMemo } from 'react'
 import { useExpenseDetail, type DetailExpense } from '../../hooks/useExpenseDetail'
+import { ExpenseRow } from '../delete/ExpenseRow'
 
 interface Props {
   categoryId: number
@@ -9,17 +11,25 @@ interface Props {
 }
 
 export default function ExpenseDetail({ categoryId, year, month, token }: Props) {
-  const { details, isLoading, isError } =
+  // obtenemos detalles y refetch
+  const { details, isLoading, isError, refetch } =
     useExpenseDetail(categoryId, year, month, token)
 
-  if (isLoading) 
+  // ordenamos las fechas de manera ascendente
+  const sortedDetails = useMemo(() => {
+    return [...details].sort((a, b) => {
+      const da = new Date(a.date).getTime()
+      const db = new Date(b.date).getTime()
+      return da - db
+    })
+  }, [details])
+
+  if (isLoading)
     return <p className="text-center py-8">Cargando detalles…</p>
-  if (isError)   
+  if (isError)
     return <p className="text-center text-red-600 py-8">Error al cargar los detalles</p>
-  if (details.length === 0)
-    return <p className="text-center py-8 text-gray-500">
-      No hay gastos para esta categoría.
-    </p>
+  if (sortedDetails.length === 0)
+    return <p className="text-center py-8 text-gray-500">No hay gastos para esta categoría.</p>
 
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -32,18 +42,25 @@ export default function ExpenseDetail({ categoryId, year, month, token }: Props)
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
               Monto (S/.)
             </th>
+            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Eliminar
+            </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-100">
-          {details.map((item: DetailExpense) => (
-            <tr key={item.id} className="hover:bg-indigo-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                {new Date(item.date).toISOString().slice(0, 10)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 text-right">
-                {item.amount.toFixed(2)}
-              </td>
-            </tr>
+          {sortedDetails.map((item: DetailExpense) => (
+            <ExpenseRow
+              key={item.id}
+              entry={{
+                id: item.id,
+                year,
+                month,
+                expenseCategory: { id: categoryId, name: '' },
+                date: item.date.slice(0, 10),
+                amount: item.amount,
+              }}
+              onDelete={() => refetch()}
+            />
           ))}
         </tbody>
       </table>

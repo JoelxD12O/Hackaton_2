@@ -1,6 +1,7 @@
 // src/hooks/useSummary.tsx
 import { useMemo } from 'react'
-import { useExpensesContext} from '../contexts/ExpensesContext'
+import { useExpensesContext } from '../contexts/ExpensesContext'
+
 
 export interface SummaryItem {
   categoryId: number
@@ -9,7 +10,8 @@ export interface SummaryItem {
 }
 
 export function useSummary(year: number, month: number) {
-  const { entries, isLoading, isError } = useExpensesContext()
+  // Ahora extraemos también `refetch` para poder recargar desde el hook
+  const { entries, isLoading, isError, refetch } = useExpensesContext()
 
   const data = useMemo<SummaryItem[]>(() => {
     // Filtramos sólo las entradas que coinciden con year/month
@@ -31,5 +33,7 @@ export function useSummary(year: number, month: number) {
     }))
   }, [entries, year, month])
 
-  return { data, isLoading, isError }
+  // Devolvemos también `refetch` para que quien use este hook pueda
+  // volver a cargar los datos después de agregar un gasto
+  return { data, isLoading, isError, refetch }
 }

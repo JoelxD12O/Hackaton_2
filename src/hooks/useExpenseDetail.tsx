@@ -1,5 +1,5 @@
 // src/hooks/useExpenseDetail.tsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 export interface DetailExpense {
   id: number
@@ -9,7 +9,7 @@ export interface DetailExpense {
 
 /**
  * Custom hook para obtener el detalle de gastos por categoría/año/mes.
- * Extrae la lógica de fetch y estados (loading/error).
+ * Extrae la lógica de fetch y estados (loading/error) y expone refetch.
  */
 export function useExpenseDetail(
   categoryId: number,
@@ -21,7 +21,7 @@ export function useExpenseDetail(
   const [isLoading, setLoading] = useState(true)
   const [isError, setError] = useState(false)
 
-  useEffect(() => {
+  const loadDetails = useCallback(async () => {
     if (!token) {
       setDetails([])
       setLoading(false)
@@ -31,18 +31,25 @@ export function useExpenseDetail(
     setLoading(true)
     setError(false)
 
-    fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/expenses/detail?year=${year}&month=${month}&categoryId=${categoryId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-      .then(res => {
-        if (!res.ok) throw new Error('Error al cargar detalle')
-        return res.json()
-      })
-      .then((data: DetailExpense[]) => setDetails(data))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/expenses/detail?year=${year}&month=${month}&categoryId=${categoryId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (!res.ok) throw new Error('Error al cargar detalle')
+      const data: DetailExpense[] = await res.json()
+      setDetails(data)
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
   }, [categoryId, year, month, token])
 
-  return { details, isLoading, isError }
+  // Carga inicial y recarga cuando cambian parámetros
+  useEffect(() => {
+    loadDetails()
+  }, [loadDetails])
+
+  return { details, isLoading, isError, refetch: loadDetails }
 }
