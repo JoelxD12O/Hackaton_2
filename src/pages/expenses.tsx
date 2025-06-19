@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api/cliente'
-import axios, { AxiosError } from 'axios'
+import { AxiosError } from 'axios'
 import { useLocation } from 'react-router-dom'
 
 interface Category {

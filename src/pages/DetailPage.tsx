@@ -1,98 +1,38 @@
 // src/pages/DetailPage.tsx
-import { useEffect, useState } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import ExpenseDetail from '../components/ExpenseDetail/ExpenseDetail'
 
-interface Category {
-  id: number
-  name: string
-}
-
 export default function DetailPage() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [categoryId, setCategoryId] = useState<number | null>(null)
-  const [year, setYear] = useState<number>(new Date().getFullYear())
-  const [month, setMonth] = useState<number>(new Date().getMonth() + 1)
-  const token = localStorage.getItem('token') || ''
+  const { token } = useAuth()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
-  // 1️⃣ Al montar, cargo las categorías disponibles
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/expenses_category`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then((data: Category[]) => setCategories(data))
-      .catch(console.error)
-  }, [token])
+  // Extraemos los params que vienen de SummaryView
+  const categoryId = Number(searchParams.get('categoryId'))
+  const year       = Number(searchParams.get('year'))
+  const month      = Number(searchParams.get('month'))
 
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl mb-4">Detalle de Gastos</h1>
+   return (
+      <div className="bg-amber-15 rounded-2xl shadow-2xl/100 p-8 w-full max-w-2xl space-y-6 mt-16">
+      {/* Botón de regreso */}
+      <button
+        onClick={() => navigate(-1)}
+            className="px-5 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      >
+        ← Volver al resumen
+      </button>
 
-      {/* Selector de Categoría */}
-      <label className="block mb-4">
-        Categoría:{' '}
-        <select
-          value={categoryId ?? ''}
-          onChange={e => setCategoryId(Number(e.target.value))}
-          className="border p-1 rounded"
-        >
-          <option value="" disabled>
-            -- Elige categoría --
-          </option>
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <h1 className="text-3xl font-semibold mb-6 text-center">Detalle de Gastos</h1>
 
-      {/* Selector de Año y Mes */}
-      <div className="flex gap-4 mb-6">
-        <label>
-          Año:{' '}
-          <select
-            value={year}
-            onChange={e => setYear(+e.target.value)}
-            className="border p-1 rounded"
-          >
-            {Array.from({ length: 5 }).map((_, i) => {
-              const y = new Date().getFullYear() - i
-              return (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              )
-            })}
-          </select>
-        </label>
-
-        <label>
-          Mes:{' '}
-          <select
-            value={month}
-            onChange={e => setMonth(+e.target.value)}
-            className="border p-1 rounded"
-          >
-            {Array.from({ length: 12 }).map((_, i) => {
-              const m = i + 1
-              return (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              )
-            })}
-          </select>
-        </label>
-      </div>
-
-      {/* Solo muestro ExpenseDetail cuando tengo categoría */}
-      {categoryId && (
+      {!categoryId || !year || !month ? (
+        <p className="text-red-600 text-center">Parámetros inválidos en la URL.</p>
+      ) : (
         <ExpenseDetail
+          categoryId={categoryId}
           year={year}
           month={month}
-          categoryId={categoryId}
-          token={token}
+          token={token ?? ''}
         />
       )}
     </div>

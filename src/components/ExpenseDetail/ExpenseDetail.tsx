@@ -1,77 +1,69 @@
-import { useEffect, useState } from 'react'
-const BACKEND = import.meta.env.VITE_BACKEND_URL as string
+// src/components/ExpenseDetail/ExpenseDetail.tsx
+import { useMemo } from 'react'
+import { useExpenseDetail, type DetailExpense } from '../../hooks/useExpenseDetail'
+import { ExpenseRow } from '../delete/ExpenseRow'
 
-export interface ExpenseDetail {
-  id: number
-  date: string
-  amount: number
-  description: string
-  category: {
-    id: number
-    name: string
-  }
-}
-
-interface ExpenseDetailProps {
+interface Props {
+  categoryId: number
   year: number
   month: number
-  categoryId: number
   token: string
 }
 
-export default function ExpenseDetail({
-  year,
-  month,
-  categoryId,
-  token,
-}: ExpenseDetailProps) {
-  const [gastos, setGastos] = useState<ExpenseDetail[] | null>(null)
-  const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
+export default function ExpenseDetail({ categoryId, year, month, token }: Props) {
+  // obtenemos detalles y refetch
+  const { details, isLoading, isError, refetch } =
+    useExpenseDetail(categoryId, year, month, token)
 
-  useEffect(() => {
-    if (!categoryId) return
+  // ordenamos las fechas de manera ascendente
+  const sortedDetails = useMemo(() => {
+    return [...details].sort((a, b) => {
+      const da = new Date(a.date).getTime()
+      const db = new Date(b.date).getTime()
+      return da - db
+    })
+  }, [details])
 
-    setLoading(true)
-    setError(null)
-
-    fetch(
-      `${BACKEND}/expenses/detail?year=${year}&month=${month}&categoryId=${categoryId}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    )
-      .then(res => {
-        if (!res.ok) throw new Error('Error al cargar detalle')
-        return res.json() as Promise<ExpenseDetail[]>
-      })
-      .then(data => setGastos(data))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [year, month, categoryId, token])
-
-  if (loading) return <p>Cargando detalle…</p>
-  if (error) return <p className="text-red-600">Error: {error}</p>
-  if (!gastos || gastos.length === 0) return <p>No hay gastos.</p>
+  if (isLoading)
+    return <p className="text-center py-8">Cargando detalles…</p>
+  if (isError)
+    return <p className="text-center text-red-600 py-8">Error al cargar los detalles</p>
+  if (sortedDetails.length === 0)
+    return <p className="text-center py-8 text-gray-500">No hay gastos para esta categoría.</p>
 
   return (
-    <table className="w-full border-collapse">
-      <thead>
-        <tr className="bg-gray-100">
-          <th className="border p-2">Fecha</th>
-          <th className="border p-2">Descripción</th>
-          <th className="border p-2 text-right">Monto</th>
-        </tr>
-      </thead>
-      <tbody>
-        {gastos.map(g => (
-          <tr key={g.id}>
-            <td className="border p-2">{g.date}</td>
-            <td className="border p-2">{g.description}</td>
-            <td className="border p-2 text-right">{g.amount.toFixed(2)}</td>
+    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+      <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
+        <thead className="bg-gray-50 border-b border-gray-300">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Fecha
+            </th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Monto (S/.)
+            </th>
+            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Eliminar
+            </th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-100">
+          {sortedDetails.map((item: DetailExpense) => (
+            <ExpenseRow
+              key={item.id}
+              entry={{
+                id: item.id,
+                year,
+                month,
+                expenseCategory: { id: categoryId, name: '' },
+                date: item.date.slice(0, 10),
+                amount: item.amount,
+              }}
+              onDelete={() => refetch()}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }

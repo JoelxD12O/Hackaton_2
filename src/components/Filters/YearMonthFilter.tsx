@@ -1,3 +1,4 @@
+// src/components/Filters/YearMonthFilter.tsx
 interface YearMonthFilterProps {
   year: number
   month: number
@@ -35,11 +36,7 @@ export function YearMonthFilter({
         >
           {Array.from({ length: 12 }).map((_, i) => {
             const m = i + 1
-            return (
-              <option key={m} value={m}>
-                {m.toString().padStart(2, '0')}
-              </option>
-            )
+            return <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
           })}
         </select>
       </label>
