@@ -1,7 +1,11 @@
+
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
+
 export async function getSummary(token: string) {
   console.log("TOKEN ENVIADO:", token);
 
-  const res = await fetch("http://198.211.105.95:8080/expenses", {
+  const res = await fetch(`${API_BASE_URL}/expenses`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
