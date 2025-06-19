@@ -1,15 +1,12 @@
 // src/pages/SummaryPage.tsx
-import { useState, useEffect  } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import { useState, useEffect } from 'react'
 import { useLogout } from '../hooks/useAuth'
 import { useSummary } from '../hooks/useSummary'
 import SummaryView from '../components/Summary/SummaryView'
 import { YearMonthFilter } from '../components/Filters/YearMonthFilter'
-import { AddExpenseModal } from '../components/Modal/AddExpenseModal' 
-
+import { AddExpenseModal } from '../components/Modal/AddExpenseModal'
 
 export default function SummaryPage() {
-  const { user } = useAuth()
   const logout = useLogout()
 
   const [year, setYear] = useState(new Date().getFullYear())
@@ -23,66 +20,71 @@ export default function SummaryPage() {
     refetch,
   } = useSummary(year, month)
 
-  // opcional: cada vez que cambien year/month recarga automáticamente
   useEffect(() => {
+    // Aquí se podría recargar automáticamente al cambiar año/mes
   }, [year, month, refetch])
-  
-    return (
-    <div className="p-6 flex justify-center">
-      <div className="bg-white rounded-xl shadow-md p-6 w-full max-w-lg">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">
-            Bienvenido{user?.email ? `, ${user.email}` : ''}
-          </h1>
-          <button
-            onClick={logout}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
-          >
-            Cerrar sesión
-          </button>
-        </div>
+
+  return (
+    <div className="min-h-screen bg-gray-100 relative p-4 flex justify-center items-start">
+      {/* Botón Cerrar sesión en la esquina superior derecha */}
+      <div className="absolute top-4 right-6">
+        <button
+          onClick={logout}
+            className="px-5 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          Cerrar sesión
+        </button>
+      </div>
+
+      {/* Contenedor central */}
+      <div className="bg-amber-15 rounded-2xl shadow-2xl/100 p-8 w-full max-w-2xl space-y-6 mt-16">
+        {/* Título */}
+        <h1 className="text-3xl font-bold text-gray-800 text-center">Bienvenido, Ahorrador</h1>
 
         {/* Filtros */}
-        <YearMonthFilter
-          year={year}
-          month={month}
-          onYearChange={setYear}
-          onMonthChange={setMonth}
-        />
+        <div className="flex justify-center">
+          <YearMonthFilter
+            year={year}
+            month={month}
+            onYearChange={setYear}
+            onMonthChange={setMonth}
+          />
+        </div>
 
-        {/* Botón para abrir modal */}
-        <div className="text-right my-4">
+        {/* Botón Agregar gasto */}
+        <div className="flex justify-center">
           <button
             onClick={() => setShowModal(true)}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            className="px-5 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
-            Agregar gasto
+            + Agregar gasto
           </button>
         </div>
 
         {/* Contenido */}
-        {isLoading && (
-          <p className="text-center text-gray-500">
-            Cargando resumen de gastos…
-          </p>
-        )}
-        {isError && (
-          <p className="text-center text-red-600">
-            Error cargando datos
-          </p>
-        )}
-        {!isLoading && !isError && (
-          <SummaryView data={summary} year={year} month={month} />
-        )}
+        <div className="min-h-[100px]">
+          {isLoading && (
+            <p className="text-center text-gray-500">
+              Cargando resumen de gastos…
+            </p>
+          )}
+          {isError && (
+            <p className="text-center text-red-600">
+              Error cargando datos
+            </p>
+          )}
+          {!isLoading && !isError && (
+            <SummaryView data={summary} year={year} month={month} />
+          )}
+        </div>
 
         {/* Modal */}
         <AddExpenseModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
           onSaved={() => {
-            refetch() // recarga el resumen después de agregar un gasto
-            setShowModal(false) // cierra el modal
+            refetch()
+            setShowModal(false)
           }}
         />
       </div>

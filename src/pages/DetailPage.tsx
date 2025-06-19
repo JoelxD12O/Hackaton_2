@@ -14,11 +14,11 @@ export default function DetailPage() {
   const month      = Number(searchParams.get('month'))
 
    return (
-    <div className="p-6 max-w-4xl mx-auto">
+      <div className="bg-amber-15 rounded-2xl shadow-2xl/100 p-8 w-full max-w-2xl space-y-6 mt-16">
       {/* Botón de regreso */}
       <button
         onClick={() => navigate(-1)}
-        className="mb-4 inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-5 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400"
       >
         ← Volver al resumen
       </button>
